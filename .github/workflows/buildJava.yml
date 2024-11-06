@@ -8,20 +8,30 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+
     steps:
-      - name: Checkout repository
+      # Étape 1 : Checkout du code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      # Étape 2 : Configuration de Java
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'corretto'
 
-      - name: Build with Maven
-        run: mvn -B package
+      # Étape 3 : Mise en cache des dépendances Maven
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository # Chemin du cache pour les dépendances Maven
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }} # Clé unique du cache, basée sur les fichiers pom.xml
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
-      - name: Run SonarCloud analysis
+      # Étape 4 : Construction du projet avec Maven
+      - name: Build with Maven
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=$(echo ${{ github.repository }} | sed 's-/-_-')
